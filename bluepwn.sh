@@ -16,6 +16,30 @@ function ctrl_c(){
     exit 1
 }
 
+function ensure_nxc(){
+  if command -v nxc >/dev/null 2>&1; then
+    NXC="nxc"
+    return
+  fi
+  if [ -x "./nxc" ]; then
+    NXC="./nxc"
+    return
+  fi
+  echo -e "${yellow}[!]${gray} nxc (NetExec) not found. Attempting to install it...${end}"
+  if command -v pipx >/dev/null 2>&1; then
+    pipx install netexec >/dev/null 2>&1
+  elif command -v pip3 >/dev/null 2>&1; then
+    pip3 install --user netexec >/dev/null 2>&1
+  fi
+  if command -v nxc >/dev/null 2>&1; then
+    NXC="nxc"
+  else
+    echo -e "${red}[!] Could not install nxc automatically.${end}"
+    echo -e "${red}[!] Install it yourself, e.g.: pipx install netexec${end}"
+    NXC=""
+  fi
+}
+
 function banner(){
   echo -e "${blue}
             ⠀⠀⠀⣤⣴⣾⣿⣿⣿⣿⣿⣶⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⡄
@@ -116,7 +140,10 @@ function run_exploit(){
 
 function get_host_info(){
   echo -ne "${blue}[?]${cyan} IP of the target: ${yellow}"; read RHOST
-  ./nxc smb $RHOST 2>/dev/null
+  ensure_nxc
+  if [ -n "$NXC" ]; then
+    $NXC smb $RHOST 2>/dev/null
+  fi
   echo -e "${yellow}[?]${gray} Would you like to go back?"
   echo -ne "${blue}[Y/n] "; read ans
   if [[ "$ans" == "Y" || "$ans" == "y" ]]; then
